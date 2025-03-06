@@ -1,0 +1,42 @@
+<!-- templates/result.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManuEncode - Detection Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container results-container">
+        <h1>Anomaly Detection Results</h1>
+        
+        <div class="result-summary">
+            <h2>Prediction: <span class="{{ 'normal' if result.prediction == 'OK' else 'anomaly' }}">{{ result.prediction }}</span></h2>
+            <p>Anomaly Score: {{ "%.2f"|format(result.score) }}</p>
+        </div>
+        
+        <div class="result-images">
+            <div class="result-image">
+                <h3>Original Image</h3>
+                <img src="{{ result.original }}" alt="Original Image">
+            </div>
+            
+            <div class="result-image">
+                <h3>Anomaly Heatmap</h3>
+                <img src="{{ result.heatmap }}" alt="Anomaly Heatmap">
+            </div>
+            
+            <div class="result-image">
+                <h3>Anomaly Segmentation</h3>
+                <img src="{{ result.segmap }}" alt="Anomaly Segmentation">
+            </div>
+        </div>
+        
+        <div class="actions">
+            <a href="{{ url_for('detect') }}" class="btn">Analyze Another Image</a>
+            <a href="{{ url_for('index') }}" class="btn secondary">Back to Home</a>
+        </div>
+    </div>
+</body>
+</html>

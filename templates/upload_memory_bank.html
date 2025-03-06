@@ -1,0 +1,74 @@
+<!-- templates/upload_memory_bank.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManuEncode - Upload Normal Images</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Normal Images</h1>
+        <p>Please upload multiple normal (defect-free) images to create a memory bank for anomaly detection.</p>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form action="{{ url_for('upload_memory_bank') }}" method="post" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="normal_images">Select normal images (multiple files allowed):</label>
+                <input type="file" id="normal_images" name="normal_images" multiple accept="image/*" required>
+                <div class="preview-container" id="preview-container"></div>
+            </div>
+            <button type="submit" class="btn">Create Memory Bank</button>
+        </form>
+        
+        <a href="{{ url_for('index') }}" class="btn secondary">Back to Home</a>
+    </div>
+    
+    <script>
+        // Preview selected images
+        document.getElementById('normal_images').addEventListener('change', function(event) {
+            const previewContainer = document.getElementById('preview-container');
+            previewContainer.innerHTML = '';
+            
+            if (this.files.length > 0) {
+                const fileCount = document.createElement('p');
+                fileCount.textContent = `${this.files.length} file(s) selected`;
+                previewContainer.appendChild(fileCount);
+                
+                // Preview first 5 images
+                for (let i = 0; i < Math.min(5, this.files.length); i++) {
+                    const file = this.files[i];
+                    if (file.type.match('image.*')) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.className = 'preview-image';
+                            previewContainer.appendChild(img);
+                        }
+                        
+                        reader.readAsDataURL(file);
+                    }
+                }
+                
+                if (this.files.length > 5) {
+                    const moreFiles = document.createElement('p');
+                    moreFiles.textContent = `...and ${this.files.length - 5} more`;
+                    previewContainer.appendChild(moreFiles);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

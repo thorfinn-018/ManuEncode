@@ -1,0 +1,61 @@
+<!-- templates/detect.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManuEncode - Detect Anomalies</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Detect Anomalies</h1>
+        <p>Upload an image to detect potential anomalies.</p>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form action="{{ url_for('detect') }}" method="post" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="test_image">Select image to analyze:</label>
+                <input type="file" id="test_image" name="test_image" accept="image/*" required>
+                <div class="preview-container" id="preview-container"></div>
+            </div>
+            <button type="submit" class="btn">Detect Anomalies</button>
+        </form>
+        
+        <a href="{{ url_for('index') }}" class="btn secondary">Back to Home</a>
+    </div>
+    
+    <script>
+        // Preview selected image
+        document.getElementById('test_image').addEventListener('change', function(event) {
+            const previewContainer = document.getElementById('preview-container');
+            previewContainer.innerHTML = '';
+            
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                if (file.type.match('image.*')) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'preview-image larger';
+                        previewContainer.appendChild(img);
+                    }
+                    
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
