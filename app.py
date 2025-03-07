@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, send_from_directory
+import gradio as gr
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,16 +11,6 @@ import io
 from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')  # Use Agg backend for saving figures without GUI
-
-# Initialize the Flask app
-app = Flask(__name__)
-app.secret_key = "anomaly_detection_secret_key"
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['RESULTS_FOLDER'] = 'static/results'
-
-# Create directories if they don't exist
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['RESULTS_FOLDER'], exist_ok=True)
 
 # Define transformation for input images
 transform = transforms.Compose([
@@ -63,28 +53,36 @@ class ResNetFeatureExtractor(torch.nn.Module):
 
         return patch
 
-# Initialize the model and memory bank
+# Initialize the model
 backbone = ResNetFeatureExtractor()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 backbone.to(device)
 memory_bank = None
 best_threshold = None
 
+# Create necessary directories
+os.makedirs('uploads', exist_ok=True)
+os.makedirs('results', exist_ok=True)
+
 # Function to load memory bank
-def load_memory_bank(normal_image_folder):
+def load_memory_bank(normal_images):
     global memory_bank, best_threshold
     
     memory_bank_list = []
     
-    folder_path = Path(normal_image_folder)
+    # Save images temporarily
+    image_paths = []
+    for i, img in enumerate(normal_images):
+        img_path = f"uploads/normal_{i}.jpg"
+        img.save(img_path)
+        image_paths.append(img_path)
     
     # Collect features from normal images
-    for pth in folder_path.iterdir():
-        if pth.suffix.lower() in ['.jpg', '.jpeg', '.png']:
-            with torch.no_grad():
-                data = transform(Image.open(pth)).unsqueeze(0).to(device)
-                features = backbone(data)
-                memory_bank_list.append(features.cpu().detach())
+    for pth in image_paths:
+        with torch.no_grad():
+            data = transform(Image.open(pth)).unsqueeze(0).to(device)
+            features = backbone(data)
+            memory_bank_list.append(features.cpu().detach())
     
     # Concatenate all features
     memory_bank = torch.cat(memory_bank_list, dim=0)
@@ -95,15 +93,14 @@ def load_memory_bank(normal_image_folder):
     
     # Calculate threshold from normal data
     y_score = []
-    for pth in folder_path.iterdir():
-        if pth.suffix.lower() in ['.jpg', '.jpeg', '.png']:
-            data = transform(Image.open(pth)).unsqueeze(0).to(device)
-            with torch.no_grad():
-                features = backbone(data)
-            distances = torch.cdist(features, memory_bank, p=2.0)
-            dist_score, _ = torch.min(distances, dim=1) 
-            s_star = torch.max(dist_score)
-            y_score.append(s_star.cpu().numpy())
+    for pth in image_paths:
+        data = transform(Image.open(pth)).unsqueeze(0).to(device)
+        with torch.no_grad():
+            features = backbone(data)
+        distances = torch.cdist(features, memory_bank, p=2.0)
+        dist_score, _ = torch.min(distances, dim=1) 
+        s_star = torch.max(dist_score)
+        y_score.append(s_star.cpu().numpy())
     
     # Set threshold as mean + 2*std
     best_threshold = np.mean(y_score) + 2 * np.std(y_score)
@@ -111,13 +108,22 @@ def load_memory_bank(normal_image_folder):
     return f"Memory bank created with {len(memory_bank)} feature vectors. Threshold: {best_threshold:.4f}"
 
 # Function to detect anomalies
-def detect_anomaly(image_path, save_dir, filename_base):
+def detect_anomaly(test_image):
+    global memory_bank, best_threshold
+    
+    if memory_bank is None:
+        return [None, None, None, 0, "Please create memory bank first"]
+    
+    # Save image temporarily
+    temp_path = "uploads/test_image.jpg"
+    test_image.save(temp_path)
+    
     with torch.no_grad():
         # Load and preprocess image
-        test_image = transform(Image.open(image_path)).unsqueeze(0).to(device)
+        test_tensor = transform(Image.open(temp_path)).unsqueeze(0).to(device)
         
         # Extract features
-        features = backbone(test_image)
+        features = backbone(test_tensor)
         
         # Calculate distances
         distances = torch.cdist(features, memory_bank, p=2.0)
@@ -136,17 +142,8 @@ def detect_anomaly(image_path, save_dir, filename_base):
         y_pred_image = 1 * (y_score_image >= best_threshold)
         class_label = ['OK', 'NOK']
         
-        # Create and save visualizations
-        plt.figure(figsize=(15, 5))
-        
         # Original image
-        plt.figure(figsize=(5, 5))
-        plt.imshow(test_image.squeeze().permute(1, 2, 0).cpu().numpy())
-        plt.title('Original Image')
-        plt.axis('on')
-        plt.tight_layout()
-        original_path = os.path.join(save_dir, f"{filename_base}_original.png")
-        plt.savefig(original_path)
+        original_img = Image.open(temp_path)
         
         # Heatmap
         plt.figure(figsize=(5, 5))
@@ -154,95 +151,78 @@ def detect_anomaly(image_path, save_dir, filename_base):
         plt.title(f'Anomaly Score: {y_score_image / best_threshold:.2f} ({class_label[y_pred_image]})')
         plt.axis('on')
         plt.tight_layout()
-        heatmap_path = os.path.join(save_dir, f"{filename_base}_heatmap.png")
+        heatmap_path = "results/heatmap.png"
         plt.savefig(heatmap_path)
+        plt.close()
+        heatmap_img = Image.open(heatmap_path)
         
-        # Ground truth / Segmentation map
+        # Segmentation map
         plt.figure(figsize=(5, 5))
         plt.imshow((segm_map > best_threshold*1.25), cmap='gray')
         plt.title('Anomaly Segmentation')
         plt.axis('on')
         plt.tight_layout()
-        segmap_path = os.path.join(save_dir, f"{filename_base}_segmap.png")
+        segmap_path = "results/segmap.png"
         plt.savefig(segmap_path)
+        plt.close()
+        segmap_img = Image.open(segmap_path)
         
-        plt.close('all')
-        
-        result = {
-            'original': original_path,
-            'heatmap': heatmap_path,
-            'segmap': segmap_path,
-            'score': float(y_score_image / best_threshold),
-            'prediction': class_label[y_pred_image]
-        }
-        
-        return result
+        return [
+            original_img, 
+            heatmap_img, 
+            segmap_img, 
+            float(y_score_image / best_threshold), 
+            class_label[y_pred_image]
+        ]
 
-# Routes
-@app.route('/')
-def index():
-    return render_template('index.html', memory_bank_loaded=(memory_bank is not None))
-
-@app.route('/upload_memory_bank', methods=['GET', 'POST'])
-def upload_memory_bank():
-    if request.method == 'POST':
-        if 'normal_images' not in request.files:
-            flash('No files selected')
-            return redirect(request.url)
-            
-        files = request.files.getlist('normal_images')
-        
-        if not files or files[0].filename == '':
-            flash('No files selected')
-            return redirect(request.url)
-            
-        # Create a temporary directory for normal images
-        temp_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'normal_images')
-        os.makedirs(temp_dir, exist_ok=True)
-        
-        # Save uploaded normal images
-        for file in files:
-            if file and file.filename:
-                file.save(os.path.join(temp_dir, file.filename))
-        
-        # Load memory bank
-        message = load_memory_bank(temp_dir)
-        flash(message)
-        
-        return redirect(url_for('index'))
-        
-    return render_template('upload_memory_bank.html')
-
-@app.route('/detect', methods=['GET', 'POST'])
-def detect():
-    if memory_bank is None:
-        flash('Please upload normal images to create a memory bank first')
-        return redirect(url_for('upload_memory_bank'))
-        
-    if request.method == 'POST':
-        if 'test_image' not in request.files:
-            flash('No file selected')
-            return redirect(request.url)
-            
-        file = request.files['test_image']
-        
-        if file.filename == '':
-            flash('No file selected')
-            return redirect(request.url)
-            
-        if file:
-            # Generate a unique filename
-            filename = str(uuid.uuid4()) + os.path.splitext(file.filename)[1]
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            
-            # Process the image
-            filename_base = os.path.splitext(filename)[0]
-            result = detect_anomaly(filepath, app.config['RESULTS_FOLDER'], filename_base)
-            
-            return render_template('result.html', result=result)
+# Create Gradio Interface
+with gr.Blocks(title="ManuEncode: Autoencoder-Driven Anomaly Detection") as demo:
+    gr.Markdown("# ManuEncode: Autoencoder-Driven Anomaly Detection for Precision Manufacturing Systems")
     
-    return render_template('detect.html')
+    with gr.Tab("Step 1: Create Memory Bank"):
+        with gr.Row():
+            normal_images_input = gr.Image(type="pil", label="Normal Images (Upload multiple)", sources=["upload"], interactive=True)
+            normal_images_gallery = gr.Gallery(label="Selected Normal Images").style(grid=4, height="auto")
+        
+        normal_images_list = gr.State([])
+        
+        def add_to_gallery(image, images_list):
+            if image is not None:
+                images_list.append(image)
+            return images_list, images_list
+        
+        normal_images_input.change(add_to_gallery, [normal_images_input, normal_images_list], [normal_images_list, normal_images_gallery])
+        
+        create_memory_bank_btn = gr.Button("Create Memory Bank")
+        memory_bank_status = gr.Textbox(label="Status")
+        
+        def create_memory_bank_fn(images_list):
+            if not images_list:
+                return "Please upload at least one normal image"
+            result = load_memory_bank(images_list)
+            return result
+        
+        create_memory_bank_btn.click(create_memory_bank_fn, [normal_images_list], [memory_bank_status])
+    
+    with gr.Tab("Step 2: Detect Anomalies"):
+        with gr.Row():
+            test_image_input = gr.Image(type="pil", label="Test Image", sources=["upload"], interactive=True)
+        
+        detect_btn = gr.Button("Detect Anomalies")
+        
+        with gr.Row():
+            original_output = gr.Image(label="Original Image")
+            heatmap_output = gr.Image(label="Anomaly Heatmap")
+            segmap_output = gr.Image(label="Anomaly Segmentation")
+        
+        with gr.Row():
+            score_output = gr.Number(label="Anomaly Score")
+            prediction_output = gr.Textbox(label="Prediction")
+        
+        detect_btn.click(
+            detect_anomaly, 
+            [test_image_input], 
+            [original_output, heatmap_output, segmap_output, score_output, prediction_output]
+        )
 
-# Configure for Render deployment
-port = int(os.environ.get("PORT", 10000))
+demo.launch()
