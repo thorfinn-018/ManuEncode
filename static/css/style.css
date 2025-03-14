@@ -1,0 +1,304 @@
+/* static/css/style.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #ADD8E6;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.glitch {
+    position: relative;
+    font-size: 2rem; /* Keep it compact */
+    font-weight: bold;
+    color: white; /* White text */
+    text-transform: uppercase;
+    text-align: center;
+    display: inline-block;
+    background-color: black; /* Black background */
+    padding: 5px 15px; /* Smaller padding */
+    border-radius: 5px; /* Less rounded corners */
+    overflow: hidden;
+    max-width: 90%; /* Prevents overflowing */
+    
+    /* Centering */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px auto; /* Auto centers horizontally */
+}
+
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    color: inherit;
+    background: inherit;
+    overflow: hidden;
+}
+
+.glitch::before {
+    left: 1px;
+    text-shadow: -1px 0 cyan;
+    clip: rect(0, 900px, 0, 0);
+    animation: glitch-anim-1 1.5s infinite linear alternate;
+}
+
+.glitch::after {
+    left: -1px;
+    text-shadow: -1px 0 magenta;
+    clip: rect(0, 900px, 0, 0);
+    animation: glitch-anim-2 1.5s infinite linear alternate;
+}
+
+@keyframes glitch-anim-1 {
+    0% { clip: rect(10px, 9999px, 50px, 0); transform: translate(-1px, -1px); }
+    50% { clip: rect(30px, 9999px, 80px, 0); transform: translate(1px, 1px); }
+    100% { clip: rect(50px, 9999px, 110px, 0); transform: translate(-1px, -1px); }
+}
+
+@keyframes glitch-anim-2 {
+    0% { clip: rect(5px, 9999px, 40px, 0); transform: translate(1px, 1px); }
+    50% { clip: rect(25px, 9999px, 70px, 0); transform: translate(-1px, -1px); }
+    100% { clip: rect(45px, 9999px, 100px, 0); transform: translate(1px, 1px); }
+}
+
+h1 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+}
+
+h2 {
+    color: #2c3e50;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+p {
+    margin-bottom: 1rem;
+}
+
+.alert {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    border: 1px solid #f5c6cb;
+}
+
+.menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.btn {
+    display: inline-block;
+    background-color: #3498db;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #2980b9;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+
+.btn.secondary {
+    background-color: #95a5a6;
+}
+
+.btn.secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.btn.disabled {
+    position: relative;
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.btn.disabled:hover::after {
+    content: "Load Memory Bank First"; /* Tooltip text */
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    top: -30px; /* Position above the button */
+    left: 50%;
+    transform: translateX(-50%);
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.btn.disabled::after {
+    content: "";
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.btn.disabled:hover::after {
+    visibility: visible;
+    opacity: 1;
+}
+
+.info {
+    background-color: #eaf2f8;
+    padding: 1.5rem;
+    border-radius: 5px;
+    margin-top: 2rem;
+}
+
+.info ol, .info ul {
+    margin-left: 2rem;
+    margin-top: 0.5rem;
+}
+
+.upload-form {
+    margin: 2rem 0;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
+
+.preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.preview-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.preview-image.larger {
+    width: 200px;
+    height: 200px;
+}
+
+.results-container {
+    max-width: 1400px;
+}
+
+.result-summary {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.result-summary .normal {
+    color: #27ae60;
+}
+
+.result-summary .anomaly {
+    color: #e74c3c;
+}
+
+.result-images {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.result-image {
+    flex: 1;
+    min-width: 300px;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.result-image h3 {
+    margin-bottom: 1rem;
+    color: #34495e;
+}
+
+.result-image img {
+    max-width: 100%;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+    .result-images {
+        flex-direction: column;
+    }
+    
+    .menu {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        text-align: center;
+    }
+}

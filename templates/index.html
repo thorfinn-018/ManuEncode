@@ -1,0 +1,51 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManuEncode</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class = "glitch" align="center" data-text="ManuEncode: Autoencoder-Driven Anomaly Detection for Precision Manufacturing Systems">ManuEncode: Autoencoder-Driven Anomaly Detection for Precision Manufacturing Systems</h1>
+        <p><i><marquee>🎉 Welcome to the anomaly detection system using the PatchCore technique and a pre-trained ResNet model for industrial applications! 😊</marquee></i></p>
+
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="menu">
+            <a href="{{ url_for('upload_memory_bank') }}" class="btn">Step 1: Upload Normal Images</a>
+            {% if memory_bank_loaded %}
+                <a href="{{ url_for('detect') }}" class="btn">Step 2: Detect Anomalies</a>
+            {% else %}
+                <a href="#" class="btn disabled">Step 2: Detect Anomalies (Load Memory Bank First)</a>
+            {% endif %}
+        </div>
+        
+        <div class="info">
+            <h2><u>How it works?</u></h2>
+            <ol>
+                <li>Upload a set of normal (defect-free) images to create a memory bank</li>
+                <li>Upload an image to check for anomalies</li>
+                <li>The system will show you:
+                    <ul type="disc">
+                        <li>Original image</li>
+                        <li>Heatmap showing potential anomalies</li>
+                        <li>Segmentation map (ground truth) of the anomalies</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
